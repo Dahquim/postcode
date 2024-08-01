@@ -3,10 +3,13 @@
 namespace App\Repositories;
 
 use App\Models\Store;
-use Illuminate\Http\JsonResponse;
 
 class StoreRepository
 {
+    /**
+     * @param array $data
+     * @return Store
+     */
     public function create(array $data): Store
     {
         $store = new Store();
@@ -20,20 +23,44 @@ class StoreRepository
         return $store;
     }
 
-    public function findStoresNear(mixed $latitude, mixed $longitude, mixed $radius)
+    /**
+     * @param mixed $latitude
+     * @param mixed $longitude
+     * @param mixed $radius
+     * @return mixed
+     */
+    public function findStoresNear(mixed $latitude, mixed $longitude, mixed $radius): mixed
     {
-        return Store::selectRaw("*, ( 6371 * acos( cos( radians(?) ) * cos( radians( JSON_EXTRACT(coords, '$.latitude') ) ) * cos( radians( JSON_EXTRACT(coords, '$.longitude') ) - radians(?) ) + sin( radians(?) ) * sin( radians( JSON_EXTRACT(coords, '$.latitude') ) ) ) ) AS distance", [$latitude, $longitude, $latitude])
+        return $this->getStoresWithDistance($latitude, $longitude)
             ->having("distance", "<", $radius)
             ->orderBy("distance")
             ->get();
     }
 
-    public function findStoresDeliveringTo(mixed $latitude, mixed $longitude)
+    /**
+     * @param mixed $latitude
+     * @param mixed $longitude
+     * @return mixed
+     */
+    public function findStoresDeliveringTo(mixed $latitude, mixed $longitude): mixed
     {
-        return Store::selectRaw("*, ( 6371 * acos( cos( radians(?) ) * cos( radians( JSON_EXTRACT(coords, '$.latitude') ) ) * cos( radians( JSON_EXTRACT(coords, '$.longitude') ) - radians(?) ) + sin( radians(?) ) * sin( radians( JSON_EXTRACT(coords, '$.latitude') ) ) ) ) AS distance", [$latitude, $longitude, $latitude])
+        return $this->getStoresWithDistance($latitude, $longitude)
             ->having("distance", "<=", "max_delivery_distance")
+            ->where('status', 'open')
             ->orderBy("distance")
             ->get();
+    }
+
+    /**
+     * @param mixed $latitude
+     * @param mixed $longitude
+     * @return mixed
+     */
+    private function getStoresWithDistance(mixed $latitude, mixed $longitude): mixed
+    {
+        $distanceCalculation = "(6371 * acos(cos(radians(?)) * cos(radians(JSON_EXTRACT(coords, '$.latitude'))) * cos(radians(JSON_EXTRACT(coords, '$.longitude')) - radians(?)) + sin(radians(?)) * sin(radians(JSON_EXTRACT(coords, '$.latitude')))))";
+
+        return Store::selectRaw("*, ROUND($distanceCalculation, 2) AS distance", [$latitude, $longitude, $latitude]);
     }
 
 }

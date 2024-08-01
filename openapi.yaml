@@ -1,0 +1,128 @@
+openapi: 3.0.0
+info:
+  title: Store API
+  version: 1.0.0
+  description: API for managing stores and retrieving store information
+
+paths:
+  /api/stores:
+    post:
+      summary: Create a new store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                coords:
+                  type: object
+                  properties:
+                    latitude:
+                      type: number
+                    longitude:
+                      type: number
+                status:
+                  type: string
+                  enum: [open, closed]
+                type:
+                  type: string
+                  enum: [takeaway, restaurant, shop]
+                max_delivery_distance:
+                  type: integer
+      responses:
+        '201':
+          description: Store created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  store:
+                    $ref: '#/components/schemas/Store'
+
+  /api/stores/near:
+    get:
+      summary: Get stores near a specified location
+      parameters:
+        - in: query
+          name: latitude
+          required: true
+          schema:
+            type: number
+        - in: query
+          name: longitude
+          required: true
+          schema:
+            type: number
+        - in: query
+          name: radius
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: List of stores near the specified location
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stores:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Store'
+
+  /api/stores/delivering:
+    get:
+      summary: Get stores delivering to a specified location
+      parameters:
+        - in: query
+          name: latitude
+          required: true
+          schema:
+            type: number
+        - in: query
+          name: longitude
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: List of stores delivering to the specified location
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stores:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Store'
+
+components:
+  schemas:
+    Store:
+      type: object
+      properties:
+        name:
+          type: string
+        coords:
+          type: object
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+        status:
+          type: string
+          enum: [open, closed]
+        type:
+          type: string
+          enum: [takeaway, restaurant, shop]
+        max_delivery_distance:
+          type: integer
